@@ -7,7 +7,7 @@ import hashlib
 from config import SPREADSHEET_DB_ID, PRIVATE_KEY_PATH, scopes
 
 def get_credentials():
-    return Credentials.from_service_account_file(PRIVATE_KEY_PATH, scopes=scopes)
+    return Credentials.from_service_account_info(PRIVATE_KEY_PATH, scopes=scopes)
 
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
