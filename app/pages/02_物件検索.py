@@ -115,7 +115,7 @@ def main():
 
     if not st.session_state['logged_in']:
         st.warning("ログインしてください")
-        st.write("[ログインページへ移動](../login.py)")
+        st.write("[ログインページへ移動](../ログイン.py)")
         return
 
     df = load_data_from_gsheet(SPREADSHEET_DB_ID, "物件DB")
