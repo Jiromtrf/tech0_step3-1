@@ -6,6 +6,9 @@ from google.oauth2.service_account import Credentials
 import hashlib
 from config import SPREADSHEET_DB_ID, PRIVATE_KEY_PATH, scopes
 
+print(f"SPREADSHEET_DB_ID: {SPREADSHEET_DB_ID}")
+print(f"PRIVATE_KEY_PATH: {PRIVATE_KEY_PATH}")
+
 def get_credentials():
     return Credentials.from_service_account_file(PRIVATE_KEY_PATH, scopes=scopes)
 
