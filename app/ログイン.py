@@ -1,16 +1,14 @@
-import os
 import streamlit as st
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 import hashlib
-from config import SPREADSHEET_DB_ID, PRIVATE_KEY_PATH, scopes
-
-print(f"SPREADSHEET_DB_ID: {SPREADSHEET_DB_ID}")
-print(f"PRIVATE_KEY_PATH: {PRIVATE_KEY_PATH}")
+from config import SPREADSHEET_DB_ID, PRIVATE_KEY_INFO, scopes
+import json
 
 def get_credentials():
-    return Credentials.from_service_account_file(PRIVATE_KEY_PATH, scopes=scopes)
+    info = json.loads(PRIVATE_KEY_INFO)
+    return Credentials.from_service_account_info(info, scopes=scopes)
 
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
