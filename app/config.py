@@ -3,12 +3,12 @@ import json
 
 SPREADSHEET_DB_ID = os.getenv("SPREADSHEET_DB_ID")
 LINE_NOTIFY_TOKEN = os.getenv("LINE_NOTIFY_TOKEN")
-private_key_content = os.getenv("PRIVATE_KEY")
+private_key_content = os.getenv("PRIVATE_KEY_PATH")
 
 # デバッグ用のプリント文
 print(f"SPREADSHEET_DB_ID: {SPREADSHEET_DB_ID}")
 print(f"LINE_NOTIFY_TOKEN: {LINE_NOTIFY_TOKEN}")
-print(f"PRIVATE_KEY: {private_key_content}")
+print(f"PRIVATE_KEY_PATH: {private_key_content}")
 
 # 環境変数が設定されているか確認
 if not SPREADSHEET_DB_ID or not LINE_NOTIFY_TOKEN or not private_key_content:
