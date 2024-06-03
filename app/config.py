@@ -8,7 +8,7 @@ private_key_content = os.getenv("PRIVATE_KEY")
 # デバッグ用のプリント文
 print(f"SPREADSHEET_DB_ID: {SPREADSHEET_DB_ID}")
 print(f"LINE_NOTIFY_TOKEN: {LINE_NOTIFY_TOKEN}")
-print(f"PRIVATE_KEY: {private_key_content is not None}")
+print(f"PRIVATE_KEY: {private_key_content}")
 
 # 環境変数が設定されているか確認
 if not SPREADSHEET_DB_ID or not LINE_NOTIFY_TOKEN or not private_key_content:
@@ -20,6 +20,7 @@ try:
     with open(PRIVATE_KEY_PATH, "w") as f:
         json.dump(json.loads(private_key_content), f)
 except json.JSONDecodeError as e:
+    print(f"Error decoding JSON: {e}")
     raise ValueError("PRIVATE_KEYの内容が無効なJSONです。") from e
 
 scopes = [
