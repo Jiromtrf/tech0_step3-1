@@ -246,7 +246,19 @@ def main():
         total_count = len(df)
         st.write(f"物件検索数: {filtered_count}件 / 全{total_count}件")
 
-        m = create_map(st.session_state.get('filtered_df2', workplace_coords, show_supermarkets, supermarket_df, show_convenience_stores, convenience_store_df, show_banks, bank_df, show_cafes, cafe_df))
+        filtered_df2 = st.session_state.get('filtered_df2', None)
+        m = create_map(
+            filtered_df2,
+            workplace_coords,
+            show_supermarkets,
+            supermarket_df,
+            show_convenience_stores,
+            convenience_store_df,
+            show_banks,
+            bank_df,
+            show_cafes,
+            cafe_df
+        )
         folium_static(m)
 
         selected_property = st.session_state.get('selected_property', None)
