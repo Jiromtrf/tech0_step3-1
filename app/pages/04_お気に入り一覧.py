@@ -51,7 +51,7 @@ def main():
     if favorite_properties:
         st.write("お気に入り物件:")
         for property_id in favorite_properties:
-            property_data = df[df.index == property_id]
+            property_data = df[df['property_id'] == property_id]
             if not property_data.empty:
                 st.write(property_data[['名称', 'アドレス', '家賃', '間取り', '階数']])
                 if pd.notnull(property_data.iloc[0]['物件画像URL']) and pd.notnull(property_data.iloc[0]['間取画像URL']):
