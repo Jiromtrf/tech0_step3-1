@@ -26,27 +26,26 @@ def preprocess_dataframe(df):
 def make_clickable(url, name):
     return f'<a target="_blank" href="{url}">{name}</a>'
 
-def calculate_distance_and_time(gmaps, start_coords, end_coords, mode="transit"):
-    try:
-        result = gmaps.distance_matrix(start_coords, end_coords, mode=mode)
-        st.write(f"Debug: Google Maps API response: {result}")  # レスポンスを表示
-        
-        if 'rows' in result and result['rows']:
-            elements = result['rows'][0]['elements']
-            if elements and 'distance' in elements[0] and 'duration' in elements[0]:
-                distance = elements[0]['distance']['text']
-                duration = elements[0]['duration']['text']
-                return distance, duration
-            elif elements and elements[0]['status'] == 'ZERO_RESULTS':
-                st.write("Debug: No results found for the given route.")
-        return None, None
-    except googlemaps.exceptions.ApiError as e:
-        st.error(f"Google Maps API error: {e}")
-        return None, None
-    except Exception as e:
-        st.error(f"Error calculating distance and time: {e}")
-        return None, None
-
+def calculate_distance_and_time(gmaps, start_coords, end_coords):
+    modes = ["transit", "driving", "walking"]
+    for mode in modes:
+        try:
+            result = gmaps.distance_matrix(start_coords, end_coords, mode=mode)
+            st.write(f"Debug: Google Maps API response for mode {mode}: {result}")  # レスポンスを表示
+            
+            if 'rows' in result and result['rows']:
+                elements = result['rows'][0]['elements']
+                if elements and 'distance' in elements[0] and 'duration' in elements[0]:
+                    distance = elements[0]['distance']['text']
+                    duration = elements[0]['duration']['text']
+                    return distance, duration
+                elif elements and elements[0]['status'] == 'ZERO_RESULTS':
+                    st.write(f"Debug: No results found for the given route with mode {mode}.")
+        except googlemaps.exceptions.ApiError as e:
+            st.error(f"Google Maps API error for mode {mode}: {e}")
+        except Exception as e:
+            st.error(f"Error calculating distance and time for mode {mode}: {e}")
+    return None, None
 
 def create_map(filtered_df, workplace_coords, show_supermarkets, supermarket_df=None, show_convenience_stores=False, convenience_store_df=None, show_banks=False, bank_df=None, show_cafes=False, cafe_df=None):
     map_center = [filtered_df['緯度'].mean(), filtered_df['経度'].mean()]
@@ -157,9 +156,7 @@ def display_search_results(filtered_df, workplace_coords):
             st.image(row['間取画像URL'], width=300)
         
         if workplace_coords:
-            distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']), mode="transit")
-            if not distance or not duration:
-                distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']), mode="driving")
+            distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']))
             st.write(f"Debug: Workplace Coords: {workplace_coords}, Property Coords: {(row['緯度'], row['経度'])}")
             st.write(f"Debug: Distance: {distance}, Duration: {duration}")
             if distance and duration:
