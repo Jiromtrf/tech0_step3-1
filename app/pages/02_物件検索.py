@@ -28,17 +28,6 @@ def make_clickable(url, name):
 def create_map(filtered_df, show_supermarkets, supermarket_df=None):
     map_center = [filtered_df['緯度'].mean(), filtered_df['経度'].mean()]
     m = folium.Map(location=map_center, zoom_start=12)
-
-    def add_circle(marker, lat, lon):
-        marker.add_child(folium.Circle(
-            location=[lat, lon],
-            radius=1000,  # 1km radius
-            color='blue',
-            fill=True,
-            fill_color='blue',
-            fill_opacity=0.1  # semi-transparent
-        ))
-
     for idx, row in filtered_df.iterrows():
         if pd.notnull(row['緯度']) and pd.notnull(row['経度']):
             popup_html = f"""
@@ -49,15 +38,20 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
             <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
             """
             popup = folium.Popup(popup_html, max_width=400)
-            marker = folium.Marker(
+            folium.Marker(
                 [row['緯度'], row['経度']],
                 popup=popup
-            )
-            marker.add_to(m)
+            ).add_to(m)
 
-            # Adding click event
-            marker.add_child(folium.ClickForMarker(popup=None))
-            add_circle(marker, row['緯度'], row['経度'])
+            # クリックイベントで円を描画する機能を追加
+            folium.Circle(
+                location=[row['緯度'], row['経度']],
+                radius=5000,  # 半径5キロメートル
+                color='blue',
+                fill=True,
+                fill_color='blue',
+                fill_opacity=0.2
+            ).add_to(m)
     
     if show_supermarkets and supermarket_df is not None:
         filtered_supermarket_df = supermarket_df[supermarket_df['区'].isin(filtered_df['区'].unique())]
@@ -151,8 +145,8 @@ def main():
         type_options = st.multiselect('■ 間取り選択', df['間取り'].unique(), default=df['間取り'].unique())
         show_supermarkets = st.checkbox("スーパーマーケットを表示", value=True)
     
-    filtered_df = df[(df['区'] == area) & (df['間取り'].isin(type_options))]
-    filtered_df = filtered_df[(filtered_df['家賃'] >= price_min) & (filtered_df['家賃'] <= price_max)]
+    filtered_df = df[(df['区'].isin([area])) & (df['間取り'].isin(type_options))]
+    filtered_df = filtered_df[(df['家賃'] >= price_min) & (df['家賃'] <= price_max)]
     filtered_count = len(filtered_df)
 
     filtered_df['緯度'] = pd.to_numeric(filtered_df['緯度'], errors='coerce')
