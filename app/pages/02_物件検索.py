@@ -29,6 +29,16 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
     map_center = [filtered_df['緯度'].mean(), filtered_df['経度'].mean()]
     m = folium.Map(location=map_center, zoom_start=12)
 
+    def add_circle(marker, lat, lon):
+        marker.add_child(folium.Circle(
+            location=[lat, lon],
+            radius=1000,  # 1km radius
+            color='blue',
+            fill=True,
+            fill_color='blue',
+            fill_opacity=0.1  # semi-transparent
+        ))
+
     for idx, row in filtered_df.iterrows():
         if pd.notnull(row['緯度']) and pd.notnull(row['経度']):
             popup_html = f"""
@@ -45,8 +55,9 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
             )
             marker.add_to(m)
 
-            # Click event to add circle on the map
-            marker.add_child(folium.ClickForMarker(popup=folium.Popup(max_width=400)).add_to(m))
+            # Adding click event
+            marker.add_child(folium.ClickForMarker(popup=None))
+            add_circle(marker, row['緯度'], row['経度'])
     
     if show_supermarkets and supermarket_df is not None:
         filtered_supermarket_df = supermarket_df[supermarket_df['区'].isin(filtered_df['区'].unique())]
@@ -61,20 +72,6 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
                     popup=popup,
                     icon=folium.Icon(color='green', icon='shopping-cart')
                 ).add_to(m)
-
-    # Function to add a circle on the map based on click
-    def on_click(event):
-        folium.Circle(
-            location=event.latlng,
-            radius=1000,  # 1km radius
-            color='blue',
-            fill=True,
-            fill_color='blue',
-            fill_opacity=0.1  # semi-transparent
-        ).add_to(m)
-
-    m.add_child(folium.ClickForMarker(popup=None).add_to(m))
-
     return m
 
 def display_search_results(filtered_df):
@@ -154,8 +151,8 @@ def main():
         type_options = st.multiselect('■ 間取り選択', df['間取り'].unique(), default=df['間取り'].unique())
         show_supermarkets = st.checkbox("スーパーマーケットを表示", value=True)
     
-    filtered_df = df[(df['区'].isin([area])) & (df['間取り'].isin(type_options))]
-    filtered_df = filtered_df[(df['家賃'] >= price_min) & (df['家賃'] <= price_max)]
+    filtered_df = df[(df['区'] == area) & (df['間取り'].isin(type_options))]
+    filtered_df = filtered_df[(filtered_df['家賃'] >= price_min) & (filtered_df['家賃'] <= price_max)]
     filtered_count = len(filtered_df)
 
     filtered_df['緯度'] = pd.to_numeric(filtered_df['緯度'], errors='coerce')
