@@ -68,7 +68,7 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None, show_conveni
                 folium.Marker(
                     [row['Latitude'], row['Longitude']],
                     popup=popup,
-                    icon=folium.Icon(color='blue', icon='info-sign')
+                    icon=folium.Icon(color='orange', icon='info-sign')
                 ).add_to(m)
     
     if show_banks and bank_df is not None:
