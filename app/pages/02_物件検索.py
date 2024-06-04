@@ -25,7 +25,7 @@ def preprocess_dataframe(df):
 def make_clickable(url, name):
     return f'<a target="_blank" href="{url}">{name}</a>'
 
-def create_map(filtered_df, show_supermarkets, supermarket_df=None):
+def create_map(filtered_df, show_supermarkets, supermarket_df=None, show_cvs, cvs_df=None):
     map_center = [filtered_df['緯度'].mean(), filtered_df['経度'].mean()]
     m = folium.Map(location=map_center, zoom_start=12)
     for idx, row in filtered_df.iterrows():
@@ -46,6 +46,20 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
     if show_supermarkets and supermarket_df is not None:
         filtered_supermarket_df = supermarket_df[supermarket_df['区'].isin(filtered_df['区'].unique())]
         for idx, row in filtered_supermarket_df.iterrows():
+            if pd.notnull(row['Latitude']) and pd.notnull(row['Longitude']):
+                popup_html = f"""
+                <b>店舗名称:</b> {row['店舗名称']}<br>
+                """
+                popup = folium.Popup(popup_html, max_width=200)
+                folium.Marker(
+                    [row['Latitude'], row['Longitude']],
+                    popup=popup,
+                    icon=folium.Icon(color='green', icon='shopping-cart')
+                ).add_to(m)
+
+    if show_cvs and cvs_df is not None:
+        filtered_cvs_df = cvs_df[filtered_cvs_df['区'].isin(filtered_df['区'].unique())]
+        for idx, row in filtered_cvs_df.iterrows():
             if pd.notnull(row['Latitude']) and pd.notnull(row['Longitude']):
                 popup_html = f"""
                 <b>店舗名称:</b> {row['店舗名称']}<br>
@@ -121,6 +135,7 @@ def main():
     df = preprocess_dataframe(df)
 
     supermarket_df = load_data_from_gsheet(SPREADSHEET_DB_ID, "スーパーDB")
+    cvs_df = load_data_from_gsheet(SPREADSHEET_DB_ID, "コンビニDB")
 
     with st.sidebar:
         area = st.radio('■ エリア選択', df['区'].unique())
@@ -133,7 +148,8 @@ def main():
             format='%.1f'
         )
         type_options = st.multiselect('■ 間取り選択', df['間取り'].unique(), default=df['間取り'].unique())
-        show_supermarkets = st.checkbox("スーパーマーケットを表示", value=True)
+        show_supermarkets = st.checkbox("スーパー", value=True)
+        show_cvs = st.checkbox("コンビニ", value=True)
     
     filtered_df = df[(df['区'].isin([area])) & (df['間取り'].isin(type_options))]
     filtered_df = filtered_df[(df['家賃'] >= price_min) & (df['家賃'] <= price_max)]
@@ -152,6 +168,10 @@ def main():
     
     if st.session_state.get('search_clicked', False):
         m = create_map(st.session_state.get('filtered_df2', filtered_df2), show_supermarkets, supermarket_df)
+        folium_static(m)
+
+    if st.session_state.get('search_clicked', False):
+        m = create_map(st.session_state.get('filtered_df2', filtered_df2), show_cvs, cvs_df)
         folium_static(m)
     
         show_all_option = st.radio(
