@@ -3,7 +3,7 @@ import streamlit as st
 
 SPREADSHEET_DB_ID = st.secrets["SPREADSHEET_DB_ID"]
 LINE_NOTIFY_TOKEN = st.secrets["LINE_NOTIFY_TOKEN"]
-GOOGLE_MAPS_API_KEY = st.secrets['YOUR_GOOGLE_MAPS_API_KEY']
+GOOGLE_MAPS_API_KEY = st.secrets['GOOGLE_MAPS_API_KEY']
 PRIVATE_KEY_PATH = {
     "type": st.secrets["PRIVATE_KEY_PATH"]["type"],
     "project_id": st.secrets["PRIVATE_KEY_PATH"]["project_id"],
