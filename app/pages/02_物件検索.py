@@ -27,10 +27,17 @@ def make_clickable(url, name):
     return f'<a target="_blank" href="{url}">{name}</a>'
 
 def calculate_distance_and_time(gmaps, start_coords, end_coords):
-    result = gmaps.distance_matrix(start_coords, end_coords, mode="transit")
-    distance = result['rows'][0]['elements'][0]['distance']['text']
-    duration = result['rows'][0]['elements'][0]['duration']['text']
-    return distance, duration
+    try:
+        result = gmaps.distance_matrix(start_coords, end_coords, mode="transit")
+        distance = result['rows'][0]['elements'][0]['distance']['text']
+        duration = result['rows'][0]['elements'][0]['duration']['text']
+        return distance, duration
+    except googlemaps.exceptions.ApiError as e:
+        st.error(f"Google Maps API error: {e}")
+        return None, None
+    except Exception as e:
+        st.error(f"Error calculating distance and time: {e}")
+        return None, None
 
 def create_map(filtered_df, workplace_coords, show_supermarkets, supermarket_df=None, show_convenience_stores=False, convenience_store_df=None, show_banks=False, bank_df=None, show_cafes=False, cafe_df=None):
     map_center = [filtered_df['緯度'].mean(), filtered_df['経度'].mean()]
@@ -41,15 +48,24 @@ def create_map(filtered_df, workplace_coords, show_supermarkets, supermarket_df=
         if pd.notnull(row['緯度']) and pd.notnull(row['経度']):
             if workplace_coords:
                 distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']))
-                popup_html = f"""
-                <b>名称:</b> {row['名称']}<br>
-                <b>アドレス:</b> {row['アドレス']}<br>
-                <b>家賃:</b> {row['家賃']}万円<br>
-                <b>間取り:</b> {row['間取り']}<br>
-                <b>勤務地までの距離:</b> {distance}<br>
-                <b>勤務地までの時間:</b> {duration}<br>
-                <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
-                """
+                if distance and duration:
+                    popup_html = f"""
+                    <b>名称:</b> {row['名称']}<br>
+                    <b>アドレス:</b> {row['アドレス']}<br>
+                    <b>家賃:</b> {row['家賃']}万円<br>
+                    <b>間取り:</b> {row['間取り']}<br>
+                    <b>勤務地までの距離:</b> {distance}<br>
+                    <b>勤務地までの時間:</b> {duration}<br>
+                    <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
+                    """
+                else:
+                    popup_html = f"""
+                    <b>名称:</b> {row['名称']}<br>
+                    <b>アドレス:</b> {row['アドレス']}<br>
+                    <b>家賃:</b> {row['家賃']}万円<br>
+                    <b>間取り:</b> {row['間取り']}<br>
+                    <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
+                    """
             else:
                 popup_html = f"""
                 <b>名称:</b> {row['名称']}<br>
@@ -204,9 +220,14 @@ def main():
         workplace_coords = None
         if workplace_address:
             gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
-            geocode_result = gmaps.geocode(workplace_address)
-            if geocode_result:
-                workplace_coords = (geocode_result[0]['geometry']['location']['lat'], geocode_result[0]['geometry']['location']['lng'])
+            try:
+                geocode_result = gmaps.geocode(workplace_address)
+                if geocode_result:
+                    workplace_coords = (geocode_result[0]['geometry']['location']['lat'], geocode_result[0]['geometry']['location']['lng'])
+            except googlemaps.exceptions.ApiError as e:
+                st.error(f"Google Maps API error: {e}")
+            except Exception as e:
+                st.error(f"Error geocoding address: {e}")
 
         show_supermarkets = st.checkbox("スーパー", value=False)
         show_convenience_stores = st.checkbox("コンビニ", value=False)
