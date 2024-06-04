@@ -3,7 +3,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 import pandas as pd
 import folium
-from streamlit_folium import folium_static, st_folium
+from streamlit_folium import folium_static
 from config import SPREADSHEET_DB_ID, scopes
 
 def get_credentials():
@@ -28,7 +28,6 @@ def make_clickable(url, name):
 def create_map(filtered_df, show_supermarkets, supermarket_df=None, show_convenience_stores=False, convenience_store_df=None, show_banks=False, bank_df=None, show_cafes=False, cafe_df=None):
     map_center = [filtered_df['緯度'].mean(), filtered_df['経度'].mean()]
     m = folium.Map(location=map_center, zoom_start=12)
-    
     for idx, row in filtered_df.iterrows():
         if pd.notnull(row['緯度']) and pd.notnull(row['経度']):
             popup_html = f"""
@@ -39,13 +38,10 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None, show_conveni
             <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
             """
             popup = folium.Popup(popup_html, max_width=400)
-            marker = folium.Marker(
+            folium.Marker(
                 [row['緯度'], row['経度']],
-                popup=popup,
-                icon=folium.Icon(icon='info-sign')
-            )
-            marker.add_to(m)
-            marker.add_child(folium.ClickForMarker(popup=popup))
+                popup=popup
+            ).add_to(m)
     
     if show_supermarkets and supermarket_df is not None:
         filtered_supermarket_df = supermarket_df[supermarket_df['区'].isin(filtered_df['区'].unique())]
@@ -105,28 +101,29 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None, show_conveni
     
     return m
 
-def display_search_results(row):
-    st.write(f"### 物件番号: {row.name + 1}")
-    st.write(f"**名称:** {row['名称']}")
-    st.write(f"**アドレス:** {row['アドレス']}")
-    st.write(f"**階数:** {row['階数']}")
-    st.write(f"**家賃:** {row['家賃']}万円")
-    st.write(f"**間取り:** {row['間取り']}")
-    st.write(f"**物件詳細URL:** {make_clickable(row['物件詳細URL'], 'リンク')}", unsafe_allow_html=True)
-    if pd.notnull(row['物件画像URL']) and pd.notnull(row['間取画像URL']):
-        col1, col2 = st.columns(2)
-        with col1:
+def display_search_results(filtered_df):
+    for idx, row in filtered_df.iterrows():
+        st.write(f"### 物件番号: {idx+1}")
+        st.write(f"**名称:** {row['名称']}")
+        st.write(f"**アドレス:** {row['アドレス']}")
+        st.write(f"**階数:** {row['階数']}")
+        st.write(f"**家賃:** {row['家賃']}万円")
+        st.write(f"**間取り:** {row['間取り']}")
+        st.write(f"**物件詳細URL:** {make_clickable(row['物件詳細URL'], 'リンク')}", unsafe_allow_html=True)
+        if pd.notnull(row['物件画像URL']) and pd.notnull(row['間取画像URL']):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.image(row['物件画像URL'], width=300)
+            with col2:
+                st.image(row['間取画像URL'], width=300)
+        elif pd.notnull(row['物件画像URL']):
             st.image(row['物件画像URL'], width=300)
-        with col2:
+        elif pd.notnull(row['間取画像URL']):
             st.image(row['間取画像URL'], width=300)
-    elif pd.notnull(row['物件画像URL']):
-        st.image(row['物件画像URL'], width=300)
-    elif pd.notnull(row['間取画像URL']):
-        st.image(row['間取画像URL'], width=300)
-    if st.button(f"お気に入り登録", key=f"favorite_{row.name + 1}"):
-        save_favorite_property(st.session_state['username'], row.name + 1)
-        st.success(f"{row['名称']}をお気に入りに追加しました")
-    st.write("---")
+        if st.button(f"お気に入り登録", key=f"favorite_{idx+1}"):
+            save_favorite_property(st.session_state['username'], idx+1)
+            st.success(f"{row['名称']}をお気に入りに追加しました")
+        st.write("---")
 
 def save_favorite_property(username, property_id):
     creds = get_credentials()
@@ -192,7 +189,6 @@ def main():
             st.session_state['filtered_df'] = st.session_state['filtered_df'][(st.session_state['filtered_df']['家賃'] >= price_min) & (st.session_state['filtered_df']['家賃'] <= price_max)]
             st.session_state['filtered_df2'] = st.session_state['filtered_df'].dropna(subset=['緯度', '経度'])
             st.session_state['search_clicked'] = True
-            st.session_state['selected_property'] = None
 
     if st.session_state.get('search_clicked', False):
         filtered_count = len(st.session_state['filtered_df'])
@@ -201,10 +197,18 @@ def main():
 
         m = create_map(st.session_state.get('filtered_df2', pd.DataFrame()), show_supermarkets, supermarket_df, show_convenience_stores, convenience_store_df, show_banks, bank_df, show_cafes, cafe_df)
         folium_static(m)
-
-        selected_property = st.session_state.get('selected_property', None)
-        if selected_property is not None:
-            display_search_results(selected_property)
+    
+        show_all_option = st.radio(
+            "表示オプションを選択してください:",
+            ('地図上の検索物件のみ', 'すべての検索物件'),
+            index=0 if not st.session_state.get('show_all', False) else 1,
+            key='show_all_option'
+        )
+        st.session_state['show_all'] = (show_all_option == 'すべての検索物件')
+        if st.session_state['show_all']:
+            display_search_results(st.session_state.get('filtered_df', pd.DataFrame()))
+        else:
+            display_search_results(st.session_state.get('filtered_df2', pd.DataFrame()))
 
 if __name__ == '__main__':
     main()
