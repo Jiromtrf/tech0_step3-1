@@ -101,7 +101,6 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None, show_conveni
     
     return m
 
-
 def display_search_results(filtered_df):
     for idx, row in filtered_df.iterrows():
         st.write(f"### 物件番号: {idx+1}")
@@ -147,7 +146,7 @@ def remove_favorite_property(username, property_id):
     sheet = client.open_by_key(SPREADSHEET_DB_ID).worksheet("お気に入りDB")
     records = sheet.get_all_records()
     fav_df = pd.DataFrame(records)
-    fav_df = fav_df[(fav_df['username'] != username) | (fav_df['property_id'] != property_id)]
+    fav_df = [(fav_df['username'] != username) | (fav_df['property_id'] != property_id)]
     sheet.clear()
     sheet.append_row(["username", "property_id"])
     for index, row in fav_df.iterrows():
@@ -203,7 +202,24 @@ def main():
     if st.session_state.get('search_clicked', False):
         m = create_map(st.session_state.get('filtered_df2', filtered_df2), show_supermarkets, supermarket_df, show_convenience_stores, convenience_store_df, show_banks, bank_df, show_cafes, cafe_df)
         folium_static(m)
-    
+
+        # HTML for legend
+        legend_html = '''
+        <div style="position: fixed; 
+                    bottom: 50px; left: 50px; width: 150px; height: 150px; 
+                    border:2px solid grey; z-index:9999; font-size:14px;
+                    background-color:white;
+                    ">&nbsp; <b>Legend</b> <br>
+                      &nbsp; <i class="fa fa-map-marker fa-2x" style="color:green"></i>&nbsp; スーパー<br>
+                      &nbsp; <i class="fa fa-map-marker fa-2x" style="color:blue"></i>&nbsp; コンビニ<br>
+                      &nbsp; <i class="fa fa-map-marker fa-2x" style="color:red"></i>&nbsp; 銀行<br>
+                      &nbsp; <i class="fa fa-map-marker fa-2x" style="color:purple"></i>&nbsp; カフェ
+        </div>
+        '''
+
+        # Display legend in map
+        m.get_root().html.add_child(folium.Element(legend_html))
+
         show_all_option = st.radio(
             "表示オプションを選択してください:",
             ('地図上の検索物件のみ', 'すべての検索物件'),
