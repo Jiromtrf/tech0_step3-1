@@ -49,9 +49,7 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
             if pd.notnull(row['Latitude']) and pd.notnull(row['Longitude']):
                 popup_html = f"""
                 <b>店舗名称:</b> {row['店舗名称']}<br>
-                緯度: {row['Latitude']}<br>
-                経度: {row['Longitude']}
-                """
+                
                 popup = folium.Popup(popup_html, max_width=200)
                 folium.Marker(
                     [row['Latitude'], row['Longitude']],
