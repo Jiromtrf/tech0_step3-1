@@ -101,7 +101,6 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None, show_conveni
     
     return m
 
-
 def display_search_results(filtered_df):
     for idx, row in filtered_df.iterrows():
         st.write(f"### 物件番号: {idx+1}")
@@ -180,10 +179,12 @@ def main():
             format='%.1f'
         )
         type_options = st.multiselect('■ 間取り選択', df['間取り'].unique(), default=df['間取り'].unique())
-        show_supermarkets = st.checkbox("スーパー", value=True)
-        show_convenience_stores = st.checkbox("コンビニ", value=True)
-        show_banks = st.checkbox("銀行", value=True)
-        show_cafes = st.checkbox("カフェ", value=True)
+        
+        # Add colored dots to checkboxes
+        show_supermarkets = st.checkbox("スーパー <span style='color:green;'>●</span>", value=True, unsafe_allow_html=True)
+        show_convenience_stores = st.checkbox("コンビニ <span style='color:blue;'>●</span>", value=True, unsafe_allow_html=True)
+        show_banks = st.checkbox("銀行 <span style='color:red;'>●</span>", value=True, unsafe_allow_html=True)
+        show_cafes = st.checkbox("カフェ <span style='color:purple;'>●</span>", value=True, unsafe_allow_html=True)
     
     filtered_df = df[(df['区'].isin([area])) & (df['間取り'].isin(type_options))]
     filtered_df = filtered_df[(df['家賃'] >= price_min) & (df['家賃'] <= price_max)]
