@@ -153,9 +153,13 @@ def display_search_results(filtered_df, workplace_coords):
         
         if workplace_coords:
             distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']))
+            st.write(f"Debug: Workplace Coords: {workplace_coords}, Property Coords: {(row['緯度'], row['経度'])}")
+            st.write(f"Debug: Distance: {distance}, Duration: {duration}")
             if distance and duration:
                 st.write(f"**勤務地までの距離:** {distance}")
                 st.write(f"**勤務地までの時間:** {duration}")
+            else:
+                st.write("**勤務地までの距離と時間の計算に失敗しました。**")
 
         if st.button(f"お気に入り登録", key=f"favorite_{idx+1}"):
             save_favorite_property(st.session_state['username'], idx+1)
