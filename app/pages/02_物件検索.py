@@ -48,7 +48,7 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
         for idx, row in filtered_supermarket_df.iterrows():
             if pd.notnull(row['Latitude']) and pd.notnull(row['Longitude']):
                 popup_html = f"""
-                <b>スーパーマーケット</b><br>
+                <b>名称:</b> {row['名称']}<br>
                 緯度: {row['Latitude']}<br>
                 経度: {row['Longitude']}
                 """
@@ -114,7 +114,7 @@ def remove_favorite_property(username, property_id):
 def main():
     st.title("物件検索")
 
-    if not st.session_state['logged_in']:
+    if not st.session_state.get('logged_in', False):
         st.warning("ログインしてください")
         st.write("[ログインページへ移動](../ログイン.py)")
         return
@@ -151,18 +151,18 @@ def main():
         st.session_state['filtered_df'] = filtered_df
         st.session_state['filtered_df2'] = filtered_df2
         st.session_state['search_clicked'] = True
+    
     if st.session_state.get('search_clicked', False):
         m = create_map(st.session_state.get('filtered_df2', filtered_df2), show_supermarkets, supermarket_df)
         folium_static(m)
     
-    show_all_option = st.radio(
-        "表示オプションを選択してください:",
-        ('地図上の検索物件のみ', 'すべての検索物件'),
-        index=0 if not st.session_state.get('show_all', False) else 1,
-        key='show_all_option'
-    )
-    st.session_state['show_all'] = (show_all_option == 'すべての検索物件')
-    if st.session_state.get('search_clicked', False):
+        show_all_option = st.radio(
+            "表示オプションを選択してください:",
+            ('地図上の検索物件のみ', 'すべての検索物件'),
+            index=0 if not st.session_state.get('show_all', False) else 1,
+            key='show_all_option'
+        )
+        st.session_state['show_all'] = (show_all_option == 'すべての検索物件')
         if st.session_state['show_all']:
             display_search_results(st.session_state.get('filtered_df', filtered_df))
         else:
