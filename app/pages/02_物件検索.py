@@ -48,7 +48,7 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
         for idx, row in filtered_supermarket_df.iterrows():
             if pd.notnull(row['Latitude']) and pd.notnull(row['Longitude']):
                 popup_html = f"""
-                <b>名称:</b> {row['名称']}<br>
+                <b>店舗名称:</b> {row['店舗名称']}<br>
                 緯度: {row['Latitude']}<br>
                 経度: {row['Longitude']}
                 """
