@@ -25,7 +25,7 @@ def preprocess_dataframe(df):
 def make_clickable(url, name):
     return f'<a target="_blank" href="{url}">{name}</a>'
 
-def create_map(filtered_df, show_supermarkets, supermarket_df=None, show_cvs, cvs_df=None):
+def create_map(filtered_df, show_supermarkets, show_cvs, supermarket_df=None, cvs_df=None):
     map_center = [filtered_df['緯度'].mean(), filtered_df['経度'].mean()]
     m = folium.Map(location=map_center, zoom_start=12)
     for idx, row in filtered_df.iterrows():
