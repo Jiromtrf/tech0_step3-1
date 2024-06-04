@@ -38,14 +38,14 @@ def calculate_distance_and_time(gmaps, start_coords, end_coords):
                 if elements and 'distance' in elements[0] and 'duration' in elements[0]:
                     distance = elements[0]['distance']['text']
                     duration = elements[0]['duration']['text']
-                    return distance, duration
+                    return distance, duration, mode
                 elif elements and elements[0]['status'] == 'ZERO_RESULTS':
                     st.write(f"Debug: No results found for the given route with mode {mode}.")
         except googlemaps.exceptions.ApiError as e:
             st.error(f"Google Maps API error for mode {mode}: {e}")
         except Exception as e:
             st.error(f"Error calculating distance and time for mode {mode}: {e}")
-    return None, None
+    return None, None, None
 
 def create_map(filtered_df, workplace_coords, show_supermarkets, supermarket_df=None, show_convenience_stores=False, convenience_store_df=None, show_banks=False, bank_df=None, show_cafes=False, cafe_df=None):
     map_center = [filtered_df['緯度'].mean(), filtered_df['経度'].mean()]
@@ -62,11 +62,12 @@ def create_map(filtered_df, workplace_coords, show_supermarkets, supermarket_df=
             <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
             """
             if workplace_coords:
-                distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']))
+                distance, duration, mode = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']))
                 if distance and duration:
                     popup_html += f"""
                     <b>勤務地までの距離:</b> {distance}<br>
                     <b>勤務地までの時間:</b> {duration}<br>
+                    <b>交通手段:</b> {mode}<br>
                     """
 
             popup = folium.Popup(popup_html, max_width=400)
@@ -156,12 +157,13 @@ def display_search_results(filtered_df, workplace_coords):
             st.image(row['間取画像URL'], width=300)
         
         if workplace_coords:
-            distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']))
+            distance, duration, mode = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']))
             st.write(f"Debug: Workplace Coords: {workplace_coords}, Property Coords: {(row['緯度'], row['経度'])}")
             st.write(f"Debug: Distance: {distance}, Duration: {duration}")
             if distance and duration:
                 st.write(f"**勤務地までの距離:** {distance}")
                 st.write(f"**勤務地までの時間:** {duration}")
+                st.write(f"**交通手段:** {mode}")
             else:
                 st.write("**勤務地までの距離と時間の計算に失敗しました。**")
 
