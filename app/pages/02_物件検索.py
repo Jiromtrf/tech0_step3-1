@@ -129,7 +129,9 @@ def create_map(filtered_df, workplace_coords, show_supermarkets, supermarket_df=
     
     return m
 
-def display_search_results(filtered_df):
+def display_search_results(filtered_df, workplace_coords):
+    gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+    
     for idx, row in filtered_df.iterrows():
         st.write(f"### 物件番号: {idx+1}")
         st.write(f"**名称:** {row['名称']}")
@@ -148,6 +150,13 @@ def display_search_results(filtered_df):
             st.image(row['物件画像URL'], width=300)
         elif pd.notnull(row['間取画像URL']):
             st.image(row['間取画像URL'], width=300)
+        
+        if workplace_coords:
+            distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']))
+            if distance and duration:
+                st.write(f"**勤務地までの距離:** {distance}")
+                st.write(f"**勤務地までの時間:** {duration}")
+
         if st.button(f"お気に入り登録", key=f"favorite_{idx+1}"):
             save_favorite_property(st.session_state['username'], idx+1)
             st.success(f"{row['名称']}をお気に入りに追加しました")
@@ -254,9 +263,9 @@ def main():
 
         selected_property = st.session_state.get('selected_property', None)
         if selected_property is not None:
-            display_search_results(selected_property)
+            display_search_results(selected_property, workplace_coords)
         else:
-            display_search_results(st.session_state['filtered_df'])
+            display_search_results(st.session_state['filtered_df'], workplace_coords)
 
 if __name__ == '__main__':
     main()
