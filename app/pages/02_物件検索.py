@@ -44,7 +44,8 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
             ).add_to(m)
     
     if show_supermarkets and supermarket_df is not None:
-        for idx, row in supermarket_df.iterrows():
+        filtered_supermarket_df = supermarket_df[supermarket_df['区'].isin(filtered_df['区'].unique())]
+        for idx, row in filtered_supermarket_df.iterrows():
             if pd.notnull(row['Latitude']) and pd.notnull(row['Longitude']):
                 popup_html = f"""
                 <b>スーパーマーケット</b><br>
@@ -123,10 +124,8 @@ def main():
 
     supermarket_df = load_data_from_gsheet(SPREADSHEET_DB_ID, "スーパーDB")
 
-    col1, col2 = st.columns([1, 2])
-    with col1:
+    with st.sidebar:
         area = st.radio('■ エリア選択', df['区'].unique())
-    with col2:
         price_min, price_max = st.slider(
             '■ 家賃範囲 (万円)',
             min_value=float(1),
@@ -135,8 +134,8 @@ def main():
             step=0.1,
             format='%.1f'
         )
-    with col2:
         type_options = st.multiselect('■ 間取り選択', df['間取り'].unique(), default=df['間取り'].unique())
+        show_supermarkets = st.checkbox("スーパーマーケットを表示", value=True)
     
     filtered_df = df[(df['区'].isin([area])) & (df['間取り'].isin(type_options))]
     filtered_df = filtered_df[(df['家賃'] >= price_min) & (df['家賃'] <= price_max)]
@@ -147,12 +146,8 @@ def main():
     filtered_df2 = filtered_df.dropna(subset=['緯度', '経度'])
     filtered_df['物件詳細URL'] = filtered_df['物件詳細URL'].apply(lambda x: make_clickable(x, "リンク"))
 
-    show_supermarkets = st.checkbox("スーパーマーケットを表示", value=True)
-
-    col2_1, col2_2 = st.columns([1, 2])
-    with col2_2:
-        st.write(f"物件検索数: {filtered_count}件 / 全{len(df)}件")
-    if col2_1.button('検索＆更新', key='search_button'):
+    st.write(f"物件検索数: {filtered_count}件 / 全{len(df)}件")
+    if st.button('検索＆更新', key='search_button'):
         st.session_state['filtered_df'] = filtered_df
         st.session_state['filtered_df2'] = filtered_df2
         st.session_state['search_clicked'] = True
