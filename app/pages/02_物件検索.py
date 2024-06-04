@@ -28,6 +28,11 @@ def make_clickable(url, name):
 
 def calculate_distance_and_time(gmaps, start_coords, end_coords):
     modes = ["transit", "driving", "walking"]
+    mode_names = {
+        "transit": "公共交通機関",
+        "driving": "車",
+        "walking": "徒歩"
+    }
     for mode in modes:
         try:
             result = gmaps.distance_matrix(start_coords, end_coords, mode=mode)
@@ -36,13 +41,13 @@ def calculate_distance_and_time(gmaps, start_coords, end_coords):
                 if elements and 'distance' in elements[0] and 'duration' in elements[0]:
                     distance = elements[0]['distance']['text']
                     duration = elements[0]['duration']['text']
-                    return distance, duration, mode
+                    return distance, duration, mode_names[mode]
                 elif elements and elements[0]['status'] == 'ZERO_RESULTS':
-                    st.write(f"Debug: No results found for the given route with mode {mode}.")
+                    continue
         except googlemaps.exceptions.ApiError as e:
-            st.error(f"Google Maps API error for mode {mode}: {e}")
+            st.error(f"Google Maps API error: {e}")
         except Exception as e:
-            st.error(f"Error calculating distance and time for mode {mode}: {e}")
+            st.error(f"Error calculating distance and time: {e}")
     return None, None, None
 
 def create_map(filtered_df, workplace_coords, show_supermarkets, supermarket_df=None, show_convenience_stores=False, convenience_store_df=None, show_banks=False, bank_df=None, show_cafes=False, cafe_df=None):
