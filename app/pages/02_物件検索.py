@@ -191,6 +191,10 @@ def main():
             st.session_state['search_clicked'] = True
 
     if st.session_state.get('search_clicked', False):
+        filtered_count = len(st.session_state['filtered_df'])
+        total_count = len(df)
+        st.write(f"物件検索数: {filtered_count}件 / 全{total_count}件")
+
         m = create_map(st.session_state.get('filtered_df2', pd.DataFrame()), show_supermarkets, supermarket_df, show_convenience_stores, convenience_store_df, show_banks, bank_df, show_cafes, cafe_df)
         folium_static(m)
     
