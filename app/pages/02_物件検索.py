@@ -28,6 +28,7 @@ def make_clickable(url, name):
 def create_map(filtered_df, show_supermarkets, supermarket_df=None):
     map_center = [filtered_df['緯度'].mean(), filtered_df['経度'].mean()]
     m = folium.Map(location=map_center, zoom_start=12)
+
     for idx, row in filtered_df.iterrows():
         if pd.notnull(row['緯度']) and pd.notnull(row['経度']):
             popup_html = f"""
@@ -38,20 +39,14 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
             <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
             """
             popup = folium.Popup(popup_html, max_width=400)
-            folium.Marker(
+            marker = folium.Marker(
                 [row['緯度'], row['経度']],
                 popup=popup
-            ).add_to(m)
+            )
+            marker.add_to(m)
 
-            # クリックイベントで円を描画する機能を追加
-            folium.Circle(
-                location=[row['緯度'], row['経度']],
-                radius=5000,  # 半径5キロメートル
-                color='blue',
-                fill=True,
-                fill_color='blue',
-                fill_opacity=0.2
-            ).add_to(m)
+            # Click event to add circle on the map
+            marker.add_child(folium.ClickForMarker(popup=folium.Popup(max_width=400)).add_to(m))
     
     if show_supermarkets and supermarket_df is not None:
         filtered_supermarket_df = supermarket_df[supermarket_df['区'].isin(filtered_df['区'].unique())]
@@ -66,6 +61,20 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
                     popup=popup,
                     icon=folium.Icon(color='green', icon='shopping-cart')
                 ).add_to(m)
+
+    # Function to add a circle on the map based on click
+    def on_click(event):
+        folium.Circle(
+            location=event.latlng,
+            radius=1000,  # 1km radius
+            color='blue',
+            fill=True,
+            fill_color='blue',
+            fill_opacity=0.1  # semi-transparent
+        ).add_to(m)
+
+    m.add_child(folium.ClickForMarker(popup=None).add_to(m))
+
     return m
 
 def display_search_results(filtered_df):
