@@ -42,6 +42,16 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
                 [row['緯度'], row['経度']],
                 popup=popup
             ).add_to(m)
+
+            # クリックイベントで円を描画する機能を追加
+            folium.Circle(
+                location=[row['緯度'], row['経度']],
+                radius=5000,  # 半径5キロメートル
+                color='blue',
+                fill=True,
+                fill_color='blue',
+                fill_opacity=0.2
+            ).add_to(m)
     
     if show_supermarkets and supermarket_df is not None:
         filtered_supermarket_df = supermarket_df[supermarket_df['区'].isin(filtered_df['区'].unique())]
