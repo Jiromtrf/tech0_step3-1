@@ -26,9 +26,9 @@ def preprocess_dataframe(df):
 def make_clickable(url, name):
     return f'<a target="_blank" href="{url}">{name}</a>'
 
-def calculate_distance_and_time(gmaps, start_coords, end_coords):
+def calculate_distance_and_time(gmaps, start_coords, end_coords, mode="transit"):
     try:
-        result = gmaps.distance_matrix(start_coords, end_coords, mode="transit")
+        result = gmaps.distance_matrix(start_coords, end_coords, mode=mode)
         st.write(f"Debug: Google Maps API response: {result}")  # レスポンスを表示
         
         if 'rows' in result and result['rows']:
@@ -37,6 +37,8 @@ def calculate_distance_and_time(gmaps, start_coords, end_coords):
                 distance = elements[0]['distance']['text']
                 duration = elements[0]['duration']['text']
                 return distance, duration
+            elif elements and elements[0]['status'] == 'ZERO_RESULTS':
+                st.write("Debug: No results found for the given route.")
         return None, None
     except googlemaps.exceptions.ApiError as e:
         st.error(f"Google Maps API error: {e}")
@@ -155,7 +157,9 @@ def display_search_results(filtered_df, workplace_coords):
             st.image(row['間取画像URL'], width=300)
         
         if workplace_coords:
-            distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']))
+            distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']), mode="transit")
+            if not distance or not duration:
+                distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']), mode="driving")
             st.write(f"Debug: Workplace Coords: {workplace_coords}, Property Coords: {(row['緯度'], row['経度'])}")
             st.write(f"Debug: Distance: {distance}, Duration: {duration}")
             if distance and duration:
