@@ -25,7 +25,7 @@ def preprocess_dataframe(df):
 def make_clickable(url, name):
     return f'<a target="_blank" href="{url}">{name}</a>'
 
-def create_map(filtered_df, show_supermarkets, supermarket_df=None):
+def create_map(filtered_df, show_supermarkets, supermarket_df=None, show_convenience_stores=False, convenience_store_df=None, show_banks=False, bank_df=None, show_cafes=False, cafe_df=None):
     map_center = [filtered_df['緯度'].mean(), filtered_df['経度'].mean()]
     m = folium.Map(location=map_center, zoom_start=12)
     for idx, row in filtered_df.iterrows():
@@ -56,7 +56,51 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None):
                     popup=popup,
                     icon=folium.Icon(color='green', icon='shopping-cart')
                 ).add_to(m)
+    
+    if show_convenience_stores and convenience_store_df is not None:
+        filtered_convenience_store_df = convenience_store_df[convenience_store_df['区'].isin(filtered_df['区'].unique())]
+        for idx, row in filtered_convenience_store_df.iterrows():
+            if pd.notnull(row['Latitude']) and pd.notnull(row['Longitude']):
+                popup_html = f"""
+                <b>店舗名称:</b> {row['店舗名称']}<br>
+                """
+                popup = folium.Popup(popup_html, max_width=200)
+                folium.Marker(
+                    [row['Latitude'], row['Longitude']],
+                    popup=popup,
+                    icon=folium.Icon(color='blue', icon='info-sign')
+                ).add_to(m)
+    
+    if show_banks and bank_df is not None:
+        filtered_bank_df = bank_df[bank_df['区'].isin(filtered_df['区'].unique())]
+        for idx, row in filtered_bank_df.iterrows():
+            if pd.notnull(row['Latitude']) and pd.notnull(row['Longitude']):
+                popup_html = f"""
+                <b>店舗名称:</b> {row['店舗名称']}<br>
+                """
+                popup = folium.Popup(popup_html, max_width=200)
+                folium.Marker(
+                    [row['Latitude'], row['Longitude']],
+                    popup=popup,
+                    icon=folium.Icon(color='red', icon='usd')
+                ).add_to(m)
+    
+    if show_cafes and cafe_df is not None:
+        filtered_cafe_df = cafe_df[cafe_df['区'].isin(filtered_df['区'].unique())]
+        for idx, row in filtered_cafe_df.iterrows():
+            if pd.notnull(row['Latitude']) and pd.notnull(row['Longitude']):
+                popup_html = f"""
+                <b>店舗名称:</b> {row['店舗名称']}<br>
+                """
+                popup = folium.Popup(popup_html, max_width=200)
+                folium.Marker(
+                    [row['Latitude'], row['Longitude']],
+                    popup=popup,
+                    icon=folium.Icon(color='purple', icon='coffee')
+                ).add_to(m)
+    
     return m
+
 
 def display_search_results(filtered_df):
     for idx, row in filtered_df.iterrows():
@@ -114,13 +158,16 @@ def main():
 
     if not st.session_state.get('logged_in', False):
         st.warning("ログインしてください")
-        st.write("[ログインページへ移動](../ログイン.py)")
+        st.write("ログインページへ移動")
         return
 
     df = load_data_from_gsheet(SPREADSHEET_DB_ID, "物件DB")
     df = preprocess_dataframe(df)
 
     supermarket_df = load_data_from_gsheet(SPREADSHEET_DB_ID, "スーパーDB")
+    convenience_store_df = load_data_from_gsheet(SPREADSHEET_DB_ID, "コンビニDB")
+    bank_df = load_data_from_gsheet(SPREADSHEET_DB_ID, "銀行DB")
+    cafe_df = load_data_from_gsheet(SPREADSHEET_DB_ID, "カフェDB")
 
     with st.sidebar:
         area = st.radio('■ エリア選択', df['区'].unique())
@@ -134,6 +181,9 @@ def main():
         )
         type_options = st.multiselect('■ 間取り選択', df['間取り'].unique(), default=df['間取り'].unique())
         show_supermarkets = st.checkbox("スーパー", value=True)
+        show_convenience_stores = st.checkbox("コンビニ", value=True)
+        show_banks = st.checkbox("銀行", value=True)
+        show_cafes = st.checkbox("カフェ", value=True)
     
     filtered_df = df[(df['区'].isin([area])) & (df['間取り'].isin(type_options))]
     filtered_df = filtered_df[(df['家賃'] >= price_min) & (df['家賃'] <= price_max)]
@@ -151,7 +201,7 @@ def main():
         st.session_state['search_clicked'] = True
     
     if st.session_state.get('search_clicked', False):
-        m = create_map(st.session_state.get('filtered_df2', filtered_df2), show_supermarkets, supermarket_df)
+        m = create_map(st.session_state.get('filtered_df2', filtered_df2), show_supermarkets, supermarket_df, show_convenience_stores, convenience_store_df, show_banks, bank_df, show_cafes, cafe_df)
         folium_static(m)
     
         show_all_option = st.radio(
