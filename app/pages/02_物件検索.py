@@ -179,28 +179,19 @@ def main():
             format='%.1f'
         )
         type_options = st.multiselect('■ 間取り選択', df['間取り'].unique(), default=['1K', '1LDK', '2LDK'])
-        show_supermarkets = st.checkbox("スーパー", value=True)
-        show_convenience_stores = st.checkbox("コンビニ", value=True)
-        show_banks = st.checkbox("銀行", value=True)
-        show_cafes = st.checkbox("カフェ", value=True)
-    
-    filtered_df = df[(df['区'].isin([area])) & (df['間取り'].isin(type_options))]
-    filtered_df = filtered_df[(df['家賃'] >= price_min) & (df['家賃'] <= price_max)]
-    filtered_count = len(filtered_df)
+        show_supermarkets = st.checkbox("スーパー", value=False)
+        show_convenience_stores = st.checkbox("コンビニ", value=False)
+        show_banks = st.checkbox("銀行", value=False)
+        show_cafes = st.checkbox("カフェ", value=False)
 
-    filtered_df['緯度'] = pd.to_numeric(filtered_df['緯度'], errors='coerce')
-    filtered_df['経度'] = pd.to_numeric(filtered_df['経度'], errors='coerce')
-    filtered_df2 = filtered_df.dropna(subset=['緯度', '経度'])
-    filtered_df['物件詳細URL'] = filtered_df['物件詳細URL'].apply(lambda x: make_clickable(x, "リンク"))
+        if st.button('検索＆更新', key='search_button'):
+            st.session_state['filtered_df'] = df[(df['区'].isin([area])) & (df['間取り'].isin(type_options))]
+            st.session_state['filtered_df'] = st.session_state['filtered_df'][(st.session_state['filtered_df']['家賃'] >= price_min) & (st.session_state['filtered_df']['家賃'] <= price_max)]
+            st.session_state['filtered_df2'] = st.session_state['filtered_df'].dropna(subset=['緯度', '経度'])
+            st.session_state['search_clicked'] = True
 
-    st.write(f"物件検索数: {filtered_count}件 / 全{len(df)}件")
-    if st.button('検索＆更新', key='search_button'):
-        st.session_state['filtered_df'] = filtered_df
-        st.session_state['filtered_df2'] = filtered_df2
-        st.session_state['search_clicked'] = True
-    
     if st.session_state.get('search_clicked', False):
-        m = create_map(st.session_state.get('filtered_df2', filtered_df2), show_supermarkets, supermarket_df, show_convenience_stores, convenience_store_df, show_banks, bank_df, show_cafes, cafe_df)
+        m = create_map(st.session_state.get('filtered_df2', pd.DataFrame()), show_supermarkets, supermarket_df, show_convenience_stores, convenience_store_df, show_banks, bank_df, show_cafes, cafe_df)
         folium_static(m)
     
         show_all_option = st.radio(
@@ -211,9 +202,9 @@ def main():
         )
         st.session_state['show_all'] = (show_all_option == 'すべての検索物件')
         if st.session_state['show_all']:
-            display_search_results(st.session_state.get('filtered_df', filtered_df))
+            display_search_results(st.session_state.get('filtered_df', pd.DataFrame()))
         else:
-            display_search_results(st.session_state.get('filtered_df2', filtered_df2))
+            display_search_results(st.session_state.get('filtered_df2', pd.DataFrame()))
 
 if __name__ == '__main__':
     main()
