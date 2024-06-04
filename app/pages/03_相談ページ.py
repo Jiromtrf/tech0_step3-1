@@ -110,9 +110,9 @@ for property_id in favorite_property_ids:
 
 tabs = st.tabs(property_names)
 
-for i, property_details in enumerate(properties):
+for i, property_name in enumerate(property_names):
     with tabs[i]:
-        property_name = property_details['名称']
+        property_details = properties[i]
         if property_details:
             st.write(f"家賃: {property_details.get('家賃', '情報なし')} 万円")
             st.write(f"間取り: {property_details.get('間取り', '情報なし')}")
