@@ -7,7 +7,7 @@ from streamlit_folium import folium_static
 from config import SPREADSHEET_DB_ID, PRIVATE_KEY_PATH, scopes
 
 def get_credentials():
-    return Credentials.from_service_account_file(PRIVATE_KEY_PATH, scopes=scopes)
+    return Credentials.from_service_account_info(PRIVATE_KEY_PATH, scopes=scopes)
 
 def load_data_from_gsheet(spreadsheet_id, sheet_name):
     creds = get_credentials()

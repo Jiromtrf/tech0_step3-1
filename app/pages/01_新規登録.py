@@ -5,7 +5,7 @@ import hashlib
 from config import SPREADSHEET_DB_ID, PRIVATE_KEY_PATH, scopes
 
 def get_credentials():
-    return Credentials.from_service_account_file(PRIVATE_KEY_PATH, scopes=scopes)
+    return Credentials.from_service_account_info(PRIVATE_KEY_PATH, scopes=scopes)
 
 def make_hashes(password):
     return hashlib.sha256(str.encode(password)).hexdigest()

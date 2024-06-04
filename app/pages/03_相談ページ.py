@@ -10,7 +10,7 @@ import requests
 from config import SPREADSHEET_DB_ID, LINE_NOTIFY_TOKEN, PRIVATE_KEY_PATH, scopes
 
 def get_credentials():
-    return Credentials.from_service_account_file(PRIVATE_KEY_PATH, scopes=scopes)
+    return Credentials.from_service_account_info(PRIVATE_KEY_PATH, scopes=scopes)
 
 def load_sheets():
     creds = get_credentials()
