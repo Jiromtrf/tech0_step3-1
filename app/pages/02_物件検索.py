@@ -29,9 +29,13 @@ def make_clickable(url, name):
 def calculate_distance_and_time(gmaps, start_coords, end_coords):
     try:
         result = gmaps.distance_matrix(start_coords, end_coords, mode="transit")
-        distance = result['rows'][0]['elements'][0]['distance']['text']
-        duration = result['rows'][0]['elements'][0]['duration']['text']
-        return distance, duration
+        if 'rows' in result and result['rows']:
+            elements = result['rows'][0]['elements']
+            if elements and 'distance' in elements[0] and 'duration' in elements[0]:
+                distance = elements[0]['distance']['text']
+                duration = elements[0]['duration']['text']
+                return distance, duration
+        return None, None
     except googlemaps.exceptions.ApiError as e:
         st.error(f"Google Maps API error: {e}")
         return None, None
@@ -46,34 +50,21 @@ def create_map(filtered_df, workplace_coords, show_supermarkets, supermarket_df=
     
     for idx, row in filtered_df.iterrows():
         if pd.notnull(row['緯度']) and pd.notnull(row['経度']):
+            popup_html = f"""
+            <b>名称:</b> {row['名称']}<br>
+            <b>アドレス:</b> {row['アドレス']}<br>
+            <b>家賃:</b> {row['家賃']}万円<br>
+            <b>間取り:</b> {row['間取り']}<br>
+            <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
+            """
             if workplace_coords:
                 distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']))
                 if distance and duration:
-                    popup_html = f"""
-                    <b>名称:</b> {row['名称']}<br>
-                    <b>アドレス:</b> {row['アドレス']}<br>
-                    <b>家賃:</b> {row['家賃']}万円<br>
-                    <b>間取り:</b> {row['間取り']}<br>
+                    popup_html += f"""
                     <b>勤務地までの距離:</b> {distance}<br>
                     <b>勤務地までの時間:</b> {duration}<br>
-                    <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
                     """
-                else:
-                    popup_html = f"""
-                    <b>名称:</b> {row['名称']}<br>
-                    <b>アドレス:</b> {row['アドレス']}<br>
-                    <b>家賃:</b> {row['家賃']}万円<br>
-                    <b>間取り:</b> {row['間取り']}<br>
-                    <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
-                    """
-            else:
-                popup_html = f"""
-                <b>名称:</b> {row['名称']}<br>
-                <b>アドレス:</b> {row['アドレス']}<br>
-                <b>家賃:</b> {row['家賃']}万円<br>
-                <b>間取り:</b> {row['間取り']}<br>
-                <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
-                """
+
             popup = folium.Popup(popup_html, max_width=400)
             folium.Marker(
                 [row['緯度'], row['経度']],
@@ -246,7 +237,7 @@ def main():
         total_count = len(df)
         st.write(f"物件検索数: {filtered_count}件 / 全{total_count}件")
 
-        filtered_df2 = st.session_state.get('filtered_df2', None)
+        filtered_df2 = st.session_state.get('filtered_df2', st.session_state['filtered_df'])
         m = create_map(
             filtered_df2,
             workplace_coords,
@@ -264,6 +255,8 @@ def main():
         selected_property = st.session_state.get('selected_property', None)
         if selected_property is not None:
             display_search_results(selected_property)
+        else:
+            display_search_results(st.session_state['filtered_df'])
 
 if __name__ == '__main__':
     main()
