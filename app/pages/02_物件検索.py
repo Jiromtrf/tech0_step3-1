@@ -29,6 +29,8 @@ def make_clickable(url, name):
 def calculate_distance_and_time(gmaps, start_coords, end_coords):
     try:
         result = gmaps.distance_matrix(start_coords, end_coords, mode="transit")
+        st.write(f"Debug: Google Maps API response: {result}")  # レスポンスを表示
+        
         if 'rows' in result and result['rows']:
             elements = result['rows'][0]['elements']
             if elements and 'distance' in elements[0] and 'duration' in elements[0]:
@@ -42,6 +44,7 @@ def calculate_distance_and_time(gmaps, start_coords, end_coords):
     except Exception as e:
         st.error(f"Error calculating distance and time: {e}")
         return None, None
+
 
 def create_map(filtered_df, workplace_coords, show_supermarkets, supermarket_df=None, show_convenience_stores=False, convenience_store_df=None, show_banks=False, bank_df=None, show_cafes=False, cafe_df=None):
     map_center = [filtered_df['緯度'].mean(), filtered_df['経度'].mean()]
