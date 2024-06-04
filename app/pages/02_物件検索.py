@@ -4,7 +4,8 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 import folium
 from streamlit_folium import folium_static
-from config import SPREADSHEET_DB_ID, scopes
+import googlemaps
+from config import SPREADSHEET_DB_ID, scopes, GOOGLE_MAPS_API_KEY
 
 def get_credentials():
     return Credentials.from_service_account_info(st.secrets["PRIVATE_KEY_PATH"], scopes=scopes)
@@ -25,18 +26,38 @@ def preprocess_dataframe(df):
 def make_clickable(url, name):
     return f'<a target="_blank" href="{url}">{name}</a>'
 
-def create_map(filtered_df, show_supermarkets, supermarket_df=None, show_convenience_stores=False, convenience_store_df=None, show_banks=False, bank_df=None, show_cafes=False, cafe_df=None):
+def calculate_distance_and_time(gmaps, start_coords, end_coords):
+    result = gmaps.distance_matrix(start_coords, end_coords, mode="transit")
+    distance = result['rows'][0]['elements'][0]['distance']['text']
+    duration = result['rows'][0]['elements'][0]['duration']['text']
+    return distance, duration
+
+def create_map(filtered_df, workplace_coords, show_supermarkets, supermarket_df=None, show_convenience_stores=False, convenience_store_df=None, show_banks=False, bank_df=None, show_cafes=False, cafe_df=None):
     map_center = [filtered_df['緯度'].mean(), filtered_df['経度'].mean()]
     m = folium.Map(location=map_center, zoom_start=12)
+    gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+    
     for idx, row in filtered_df.iterrows():
         if pd.notnull(row['緯度']) and pd.notnull(row['経度']):
-            popup_html = f"""
-            <b>名称:</b> {row['名称']}<br>
-            <b>アドレス:</b> {row['アドレス']}<br>
-            <b>家賃:</b> {row['家賃']}万円<br>
-            <b>間取り:</b> {row['間取り']}<br>
-            <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
-            """
+            if workplace_coords:
+                distance, duration = calculate_distance_and_time(gmaps, workplace_coords, (row['緯度'], row['経度']))
+                popup_html = f"""
+                <b>名称:</b> {row['名称']}<br>
+                <b>アドレス:</b> {row['アドレス']}<br>
+                <b>家賃:</b> {row['家賃']}万円<br>
+                <b>間取り:</b> {row['間取り']}<br>
+                <b>勤務地までの距離:</b> {distance}<br>
+                <b>勤務地までの時間:</b> {duration}<br>
+                <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
+                """
+            else:
+                popup_html = f"""
+                <b>名称:</b> {row['名称']}<br>
+                <b>アドレス:</b> {row['アドレス']}<br>
+                <b>家賃:</b> {row['家賃']}万円<br>
+                <b>間取り:</b> {row['間取り']}<br>
+                <a href="{row['物件詳細URL']}" target="_blank">物件詳細</a>
+                """
             popup = folium.Popup(popup_html, max_width=400)
             folium.Marker(
                 [row['緯度'], row['経度']],
@@ -179,6 +200,14 @@ def main():
             format='%.1f'
         )
         type_options = st.multiselect('■ 間取り選択', df['間取り'].unique(), default=['1K', '1LDK', '2LDK'])
+        workplace_address = st.text_input("■ 現在の勤務地住所を入力")
+        workplace_coords = None
+        if workplace_address:
+            gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+            geocode_result = gmaps.geocode(workplace_address)
+            if geocode_result:
+                workplace_coords = (geocode_result[0]['geometry']['location']['lat'], geocode_result[0]['geometry']['location']['lng'])
+
         show_supermarkets = st.checkbox("スーパー", value=False)
         show_convenience_stores = st.checkbox("コンビニ", value=False)
         show_banks = st.checkbox("銀行", value=False)
@@ -189,26 +218,19 @@ def main():
             st.session_state['filtered_df'] = st.session_state['filtered_df'][(st.session_state['filtered_df']['家賃'] >= price_min) & (st.session_state['filtered_df']['家賃'] <= price_max)]
             st.session_state['filtered_df2'] = st.session_state['filtered_df'].dropna(subset=['緯度', '経度'])
             st.session_state['search_clicked'] = True
+            st.session_state['selected_property'] = None
 
     if st.session_state.get('search_clicked', False):
         filtered_count = len(st.session_state['filtered_df'])
         total_count = len(df)
         st.write(f"物件検索数: {filtered_count}件 / 全{total_count}件")
 
-        m = create_map(st.session_state.get('filtered_df2', pd.DataFrame()), show_supermarkets, supermarket_df, show_convenience_stores, convenience_store_df, show_banks, bank_df, show_cafes, cafe_df)
+        m = create_map(st.session_state.get('filtered_df2', workplace_coords, show_supermarkets, supermarket_df, show_convenience_stores, convenience_store_df, show_banks, bank_df, show_cafes, cafe_df))
         folium_static(m)
-    
-        show_all_option = st.radio(
-            "表示オプションを選択してください:",
-            ('地図上の検索物件のみ', 'すべての検索物件'),
-            index=0 if not st.session_state.get('show_all', False) else 1,
-            key='show_all_option'
-        )
-        st.session_state['show_all'] = (show_all_option == 'すべての検索物件')
-        if st.session_state['show_all']:
-            display_search_results(st.session_state.get('filtered_df', pd.DataFrame()))
-        else:
-            display_search_results(st.session_state.get('filtered_df2', pd.DataFrame()))
+
+        selected_property = st.session_state.get('selected_property', None)
+        if selected_property is not None:
+            display_search_results(selected_property)
 
 if __name__ == '__main__':
     main()
