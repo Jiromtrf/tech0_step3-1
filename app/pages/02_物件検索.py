@@ -101,6 +101,7 @@ def create_map(filtered_df, show_supermarkets, supermarket_df=None, show_conveni
     
     return m
 
+
 def display_search_results(filtered_df):
     for idx, row in filtered_df.iterrows():
         st.write(f"### 物件番号: {idx+1}")
@@ -146,7 +147,7 @@ def remove_favorite_property(username, property_id):
     sheet = client.open_by_key(SPREADSHEET_DB_ID).worksheet("お気に入りDB")
     records = sheet.get_all_records()
     fav_df = pd.DataFrame(records)
-    fav_df = [(fav_df['username'] != username) | (fav_df['property_id'] != property_id)]
+    fav_df = fav_df[(fav_df['username'] != username) | (fav_df['property_id'] != property_id)]
     sheet.clear()
     sheet.append_row(["username", "property_id"])
     for index, row in fav_df.iterrows():
@@ -168,16 +169,21 @@ def main():
     bank_df = load_data_from_gsheet(SPREADSHEET_DB_ID, "銀行DB")
     cafe_df = load_data_from_gsheet(SPREADSHEET_DB_ID, "カフェDB")
 
-    area = st.sidebar.radio('■ エリア選択', df['区'].unique())
-    price_min, price_max = st.sidebar.slider(
-        '■ 家賃範囲 (万円)',
-        min_value=float(1),
-        max_value=float(df['家賃'].max()),
-        value=(float(df['家賃'].min()), float(df['家賃'].max())),
-        step=0.1,
-        format='%.1f'
-    )
-    type_options = st.sidebar.multiselect('■ 間取り選択', df['間取り'].unique(), default=df['間取り'].unique())
+    with st.sidebar:
+        area = st.radio('■ エリア選択', df['区'].unique())
+        price_min, price_max = st.slider(
+            '■ 家賃範囲 (万円)',
+            min_value=float(1),
+            max_value=float(df['家賃'].max()),
+            value=(float(df['家賃'].min()), float(df['家賃'].max())),
+            step=0.1,
+            format='%.1f'
+        )
+        type_options = st.multiselect('■ 間取り選択', df['間取り'].unique(), default=df['間取り'].unique())
+        show_supermarkets = st.checkbox("スーパー", value=True)
+        show_convenience_stores = st.checkbox("コンビニ", value=True)
+        show_banks = st.checkbox("銀行", value=True)
+        show_cafes = st.checkbox("カフェ", value=True)
     
     filtered_df = df[(df['区'].isin([area])) & (df['間取り'].isin(type_options))]
     filtered_df = filtered_df[(df['家賃'] >= price_min) & (df['家賃'] <= price_max)]
@@ -195,17 +201,9 @@ def main():
         st.session_state['search_clicked'] = True
     
     if st.session_state.get('search_clicked', False):
-        m = create_map(st.session_state.get('filtered_df2', filtered_df2), False, supermarket_df, False, convenience_store_df, False, bank_df, False, cafe_df)
+        m = create_map(st.session_state.get('filtered_df2', filtered_df2), show_supermarkets, supermarket_df, show_convenience_stores, convenience_store_df, show_banks, bank_df, show_cafes, cafe_df)
         folium_static(m)
-        
-        # Display checkboxes in the right bottom corner
-        st.markdown("<style>.fixed-bottom {position: fixed; bottom: 10px; right: 10px; background: white; padding: 10px;}</style>", unsafe_allow_html=True)
-        with st.sidebar.container():
-            show_supermarkets = st.checkbox("スーパー", value=True, key="supermarket_cb")
-            show_convenience_stores = st.checkbox("コンビニ", value=True, key="convenience_store_cb")
-            show_banks = st.checkbox("銀行", value=True, key="bank_cb")
-            show_cafes = st.checkbox("カフェ", value=True, key="cafe_cb")
-
+    
         show_all_option = st.radio(
             "表示オプションを選択してください:",
             ('地図上の検索物件のみ', 'すべての検索物件'),
